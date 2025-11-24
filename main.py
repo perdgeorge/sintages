@@ -32,7 +32,7 @@ app.include_router(users_router, prefix="/users", tags=["users"])
 app.include_router(ingredients_router, prefix="/ingredients", tags=["ingredients"])
 app.include_router(categories_router, prefix="/categories", tags=["categories"])
 app.include_router(recipes_router, prefix="/recipes", tags=["recipes"])
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
+app.include_router(auth_router, tags=["auth"])
 
 
 @app.get("/health")

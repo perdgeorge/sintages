@@ -20,4 +20,5 @@ dependencies = [
     "sqlalchemy>=2.0.43",
     "testcontainers[postgresql]>=4.13.1",
     "uvicorn>=0.37.0",
+    "pyjwt>=2.10.1",
 ]

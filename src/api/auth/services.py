@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
-from src.api.users.schemas import UserSchema
 from src.core.security import verify_password
 from src.db.models.users import User
 from src.core.config import config
@@ -103,11 +102,3 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
     if user is None:
         raise create_credentials_exception("Could not find user for this token")
     return user
-
-
-def get_current_active_user(
-    current_user: Annotated[UserSchema, Depends(get_current_user)],
-) -> UserSchema:
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
