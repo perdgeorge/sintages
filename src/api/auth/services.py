@@ -102,11 +102,3 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
     if user is None:
         raise create_credentials_exception("Could not find user for this token")
     return user
-
-
-# def get_current_active_user(
-#     current_user: Annotated[User, Depends(get_current_user)],
-# ) -> User:
-#     if not current_user.is_active:
-#         raise HTTPException(status_code=400, detail="Inactive user")
-#     return current_user
