@@ -15,7 +15,6 @@ class RecipeBaseSchema(BaseSchema):
     difficulty_level: DifficultyLevel = Field(..., examples=["EASY", "MEDIUM", "HARD"])
     portions: int = Field(..., examples=[4], ge=1)
     instructions: str = Field(..., examples=["Mix all ingredients."])
-    user_id: int = Field(..., examples=[1])
 
     @field_validator("name")
     @classmethod
@@ -42,6 +41,20 @@ class GetRecipeSchema(RecipeBaseSchema):
         default_factory=list,
         alias="recipe_ingredients_payload",
         serialization_alias="ingredients",
+    )
+    user_id: int = Field(..., examples=[1])
+
+
+class UpdateRecipeSchema(BaseSchema):
+    name: str | None = Field(examples=["Tzatziki"], default=None)
+    cooking_time: int | None = Field(examples=[30], ge=1, default=None)
+    difficulty_level: DifficultyLevel | None = Field(
+        examples=["EASY", "MEDIUM", "HARD"], default=None
+    )
+    portions: int | None = Field(examples=[4], ge=1, default=None)
+    instructions: str | None = Field(examples=["Mix all ingredients."], default=None)
+    ingredients: list[RecipeIngredientPayload] = Field(
+        default_factory=list, examples=[[{"ingredient_id": 1, "quantity": "100 grams"}]]
     )
 
 
