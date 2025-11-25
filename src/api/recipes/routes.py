@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
+from src.api.auth.services import get_current_user
 from src.api.recipes.schemas import (
     CreateRecipeSchema,
     GetRecipeSchema,
     DeleteRecipeSchema,
+    UpdateRecipeSchema,
 )
 from src.api.recipes.services import RecipeRepository
 from src.api.recipes.dependencies import get_recipe_repository
@@ -68,8 +70,27 @@ async def get_recipes_user(
 async def create_recipe(
     recipe: CreateRecipeSchema,
     recipe_repository: RecipeRepository = Depends(get_recipe_repository),
+    current_user_id=Depends(get_current_user),
 ) -> GetRecipeSchema:
-    return recipe_repository.create_recipe(recipe)
+    return recipe_repository.create_recipe(recipe, current_user_id)
+
+
+@router.put(
+    "/{recipe_id}",
+    response_model=UpdateRecipeSchema,
+    responses={
+        409: {"model": ErrorResponse, "description": "Ingredient already exists"},
+        422: {"model": ErrorResponse, "description": "Invalid Ingredient input format"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
+)
+async def update_recipe(
+    recipe_id: int,
+    recipe: UpdateRecipeSchema,
+    recipe_repository: RecipeRepository = Depends(get_recipe_repository),
+    current_user_id=Depends(get_current_user),
+) -> GetRecipeSchema:
+    return recipe_repository.update_recipe_by_id(recipe_id, recipe, current_user_id)
 
 
 @router.delete(
@@ -83,5 +104,6 @@ async def create_recipe(
 async def delete_recipe(
     recipe_id: int,
     recipe_repository: RecipeRepository = Depends(get_recipe_repository),
+    current_user_id=Depends(get_current_user),
 ) -> DeleteRecipeSchema:
-    return recipe_repository.delete_recipe_by_id(recipe_id)
+    return recipe_repository.delete_recipe_by_id(recipe_id, current_user_id)
