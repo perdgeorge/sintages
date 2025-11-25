@@ -1,4 +1,6 @@
-from fastapi import status
+from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 from src.db.models.recipes import Recipe, RecipeIngredient
 from src.db.models.ingredients import Ingredient
 from src.db.models.users import User
@@ -7,9 +9,8 @@ from src.api.recipes.schemas import (
     CreateRecipeSchema,
     DeleteRecipeSchema,
     RecipeIngredientPayload,
+    UpdateRecipeSchema,
 )
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 from src.core.exceptions import ErrorException
 from src.core.enums import ErrorKind
 
@@ -87,8 +88,10 @@ class RecipeRepository:
             for item in items
         ]
 
-    def create_recipe(self, recipe_data: CreateRecipeSchema) -> GetRecipeSchema:
-        user = self.db.query(User).filter(User.id == recipe_data.user_id).first()
+    def create_recipe(
+        self, recipe_data: CreateRecipeSchema, current_user_id: int
+    ) -> GetRecipeSchema:
+        user = self.db.query(User).filter(User.id == current_user_id.id).first()
         if not user:
             raise ErrorException(
                 code=status.HTTP_404_NOT_FOUND,
@@ -103,7 +106,7 @@ class RecipeRepository:
                 difficulty_level=recipe_data.difficulty_level,
                 portions=recipe_data.portions,
                 instructions=recipe_data.instructions,
-                user_id=recipe_data.user_id,
+                user_id=current_user_id.id,
                 user=user,
             )
             new_recipe.recipe_ingredients = self.make_recipe_ingredients(
@@ -118,7 +121,9 @@ class RecipeRepository:
                 source=f"{self.repo_name}.create_recipe",
             )
 
-    def delete_recipe_by_id(self, recipe_id: int) -> DeleteRecipeSchema:
+    def delete_recipe_by_id(
+        self, recipe_id: int, current_user_id: int
+    ) -> DeleteRecipeSchema:
         recipe = self.db.query(Recipe).filter(Recipe.id == recipe_id).first()
         if not recipe:
             raise ErrorException(
@@ -127,7 +132,64 @@ class RecipeRepository:
                 kind=ErrorKind.NOT_FOUND,
                 source=f"{self.repo_name}.delete_recipe_by_id",
             )
+        user = (
+            self.db.query(Recipe).filter(Recipe.user_id == current_user_id.id).first()
+        )
+        if not user:
+            raise ErrorException(
+                code=status.HTTP_403_FORBIDDEN,
+                message="You do not have permission to delete this recipe.",
+                kind=ErrorKind.AUTHORIZATION,
+                source=f"{self.repo_name}.delete_recipe_by_id",
+            )
         response = DeleteRecipeSchema.model_validate(recipe)
         self.db.delete(recipe)
         self.db.commit()
         return response
+
+    def update_recipe_by_id(
+        self, recipe_id: int, recipe_data: UpdateRecipeSchema, current_user_id: int
+    ) -> GetRecipeSchema:
+        user = (
+            self.db.query(Recipe).filter(Recipe.user_id == current_user_id.id).first()
+        )
+        if not user:
+            raise ErrorException(
+                code=status.HTTP_403_FORBIDDEN,
+                message="You do not have permission to update this recipe.",
+                kind=ErrorKind.AUTHORIZATION,
+                source=f"{self.repo_name}.update_recipe",
+            )
+        recipe = self.db.query(Recipe).filter(Recipe.id == recipe_id).first()
+        if not recipe:
+            raise HTTPException(
+                status_code=404,
+                detail="Recipe not found",
+                kind=ErrorKind.NOT_FOUND,
+                source=f"{self.repo_name}.update_recipe",
+            )
+        try:
+            if recipe_data.name is not None:
+                recipe.name = recipe_data.name
+            if recipe_data.cooking_time is not None:
+                recipe.cooking_time = recipe_data.cooking_time
+            if recipe_data.difficulty_level is not None:
+                recipe.difficulty_level = recipe_data.difficulty_level
+            if recipe_data.portions is not None:
+                recipe.portions = recipe_data.portions
+            if recipe_data.instructions is not None:
+                recipe.instructions = recipe_data.instructions
+            if recipe_data.ingredients is not None:
+                recipe.recipe_ingredients = self.make_recipe_ingredients(
+                    recipe_data.ingredients
+                )
+            self.db.commit()
+            self.db.refresh(recipe)
+            return GetRecipeSchema.model_validate(recipe)
+        except IntegrityError:
+            raise ErrorException(
+                code=status.HTTP_409_CONFLICT,
+                message="Recipe name already exists",
+                kind=ErrorKind.CONFLICT,
+                source=f"{self.repo_name},update_recipe",
+            )
