@@ -106,7 +106,6 @@ class RecipeRepository:
                 difficulty_level=recipe_data.difficulty_level,
                 portions=recipe_data.portions,
                 instructions=recipe_data.instructions,
-                user_id=current_user_id.id,
                 user=user,
             )
             new_recipe.recipe_ingredients = self.make_recipe_ingredients(
@@ -138,7 +137,7 @@ class RecipeRepository:
         if not user:
             raise ErrorException(
                 code=status.HTTP_403_FORBIDDEN,
-                message="You do not have permission to delete this recipe.",
+                message="User does not have permission to delete this recipe.",
                 kind=ErrorKind.AUTHORIZATION,
                 source=f"{self.repo_name}.delete_recipe_by_id",
             )
@@ -156,7 +155,7 @@ class RecipeRepository:
         if not user:
             raise ErrorException(
                 code=status.HTTP_403_FORBIDDEN,
-                message="You do not have permission to update this recipe.",
+                message="User does not have permission to update this recipe.",
                 kind=ErrorKind.AUTHORIZATION,
                 source=f"{self.repo_name}.update_recipe",
             )
@@ -169,20 +168,14 @@ class RecipeRepository:
                 source=f"{self.repo_name}.update_recipe",
             )
         try:
-            if recipe_data.name is not None:
-                recipe.name = recipe_data.name
-            if recipe_data.cooking_time is not None:
-                recipe.cooking_time = recipe_data.cooking_time
-            if recipe_data.difficulty_level is not None:
-                recipe.difficulty_level = recipe_data.difficulty_level
-            if recipe_data.portions is not None:
-                recipe.portions = recipe_data.portions
-            if recipe_data.instructions is not None:
-                recipe.instructions = recipe_data.instructions
-            if recipe_data.ingredients is not None:
-                recipe.recipe_ingredients = self.make_recipe_ingredients(
-                    recipe_data.ingredients
-                )
+            recipe.name = recipe_data.name
+            recipe.cooking_time = recipe_data.cooking_time
+            recipe.difficulty_level = recipe_data.difficulty_level
+            recipe.portions = recipe_data.portions
+            recipe.instructions = recipe_data.instructions
+            recipe.recipe_ingredients = self.make_recipe_ingredients(
+                recipe_data.ingredients
+            )
             self.db.commit()
             self.db.refresh(recipe)
             return GetRecipeSchema.model_validate(recipe)
