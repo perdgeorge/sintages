@@ -82,7 +82,13 @@ async def update_user(
     return user_repository.update_user(user_id, user)
 
 
-@router.get("/me/", response_model=GetUserSchema)
+@router.get(
+    "/me/",
+    response_model=GetUserSchema,
+    responses={
+        401: {"model": ErrorResponse, "description": "User lacks valid authentication"},
+    },
+)
 async def read_users_me(
     current_user: Annotated[User, Depends(services.get_current_user)],
 ):

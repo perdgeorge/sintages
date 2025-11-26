@@ -6,3 +6,4 @@ class ErrorKind(StrEnum):
     INTERNAL = "InternalError"
     CONFLICT = "ConflictError"
     VALIDATION = "ValidationError"
+    AUTHORIZATION = "AuthorizationError"

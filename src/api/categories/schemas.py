@@ -32,4 +32,4 @@ class CreateCategorySchema(CategorySchema):
 
 
 class UpdateCategorySchema(CategorySchema):
-    name: str | None = Field(examples=["Veggies"], default=None)
+    name: str = Field(..., examples=["Veggies"])

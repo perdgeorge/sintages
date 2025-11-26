@@ -33,8 +33,8 @@ class CreateIngredientSchema(IngredientSchema):
 
 
 class UpdateIngredientSchema(IngredientSchema):
-    name: str | None = Field(examples=["Broccoli"], default=None)
-    is_vegan: bool | None = Field(examples=[True], default=None)
+    name: str = Field(..., examples=["Broccoli"])
+    is_vegan: bool = Field(..., examples=[True])
     categories: list["CategoryRelationshipSchema"] = Field(
         default_factory=list,
         examples=[[{"id": 1, "name": "Veggies"}]],
