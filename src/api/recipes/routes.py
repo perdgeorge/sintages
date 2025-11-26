@@ -62,6 +62,7 @@ async def get_recipes_user(
     response_model=GetRecipeSchema,
     status_code=201,
     responses={
+        401: {"model": ErrorResponse, "description": "User lacks valid authentication"},
         409: {"model": ErrorResponse, "description": "Recipe name already exists"},
         422: {"model": ErrorResponse, "description": "Invalid recipe input format"},
         500: {"model": ErrorResponse, "description": "Internal server error"},
@@ -79,6 +80,11 @@ async def create_recipe(
     "/{recipe_id}",
     response_model=UpdateRecipeSchema,
     responses={
+        401: {"model": ErrorResponse, "description": "User lacks valid authentication"},
+        403: {
+            "model": ErrorResponse,
+            "description": "User does not have permission to update this recipe",
+        },
         409: {"model": ErrorResponse, "description": "Ingredient already exists"},
         422: {"model": ErrorResponse, "description": "Invalid Ingredient input format"},
         500: {"model": ErrorResponse, "description": "Internal server error"},
@@ -97,6 +103,11 @@ async def update_recipe(
     "/{recipe_id}",
     response_model=DeleteRecipeSchema,
     responses={
+        401: {"model": ErrorResponse, "description": "User lacks valid authentication"},
+        403: {
+            "model": ErrorResponse,
+            "description": "User does not have permission to update this recipe",
+        },
         404: {"model": ErrorResponse, "description": "Recipe not found"},
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
