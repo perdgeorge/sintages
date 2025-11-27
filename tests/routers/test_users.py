@@ -46,3 +46,29 @@ def test_update_user(client: TestClient, user: User):
     assert data["username"] == new_payload.username
     assert data["email"] == new_payload.email
     assert data["full_name"] == new_payload.full_name
+
+
+@pytest.mark.anyio
+def test_login(client: TestClient, user: User):
+    example_user = make_user_payload()
+    response = client.post(
+        "/token",
+        json={"username": example_user.username, "password": example_user.password},
+    )
+    print(response.json())
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    assert token is not None
+    return token
+
+
+@pytest.mark.anyio
+def test_read_users_me(client: TestClient, user: User):
+    token = test_login(client, user)
+    resp = client.get("/users/me/", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["id"] == user.id
+    assert data["username"] == user.username
+    assert data["email"] == user.email
+    assert data["full_name"] == user.full_name
