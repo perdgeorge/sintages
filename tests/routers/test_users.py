@@ -50,22 +50,23 @@ def test_update_user(client: TestClient, user: User):
 
 @pytest.mark.anyio
 def test_login(client: TestClient, user: User):
-    example_user = make_user_payload()
     response = client.post(
         "/token",
-        json={"username": example_user.username, "password": example_user.password},
+        data={
+            "username": user.username,
+            "password": user.raw_password,
+            "grant_type": "password",
+        },
+        headers={"content-type": "application/x-www-form-urlencoded"},
     )
-    print(response.json())
     assert response.status_code == 200
     token = response.json()["access_token"]
     assert token is not None
-    return token
 
 
 @pytest.mark.anyio
-def test_read_users_me(client: TestClient, user: User):
-    token = test_login(client, user)
-    resp = client.get("/users/me/", headers={"Authorization": f"Bearer {token}"})
+def test_read_users_me(client: TestClient, user: User, auth_headers: dict):
+    resp = client.get("/users/me/", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert data["id"] == user.id
