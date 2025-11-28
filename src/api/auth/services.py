@@ -8,8 +8,9 @@ import jwt
 from src.core.security import verify_password
 from src.db.models.users import User
 from src.core.config import config
-from src.core.dependencies import get_db_context
+from src.core.dependencies import get_db
 from src.api.auth.enums import JWTType
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -78,27 +79,28 @@ def get_subject_for_token_type(
     return username
 
 
-def get_user(username: str) -> User | None:
+def get_user(username: str, db: Session) -> User | None:
     logger.debug("Fetching user from the database", extra={"username": username})
-    with get_db_context() as db:
-        user = db.query(User).filter(User.username == username).first()
-    if user:
-        return user
+    return db.query(User).filter(User.username == username).first()
 
 
-def authenticate_user(username: str, password: str) -> User:
+def authenticate_user(username: str, password: str, user: User) -> User:
     logger.debug("Authenticating user", extra={"username": username})
-    user = get_user(username=username)
     if not user:
         raise create_credentials_exception("Invalid username or password")
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(
+        plain_password=password, hashed_password=user.hashed_password
+    ):
         raise create_credentials_exception("Invalid password")
     return user
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
+def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+) -> User:
     username = get_subject_for_token_type(token, "access")
-    user = get_user(username=username)
+    user = get_user(username=username, db=db)
     if user is None:
         raise create_credentials_exception("Could not find user for this token")
     return user
