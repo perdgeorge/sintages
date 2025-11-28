@@ -113,6 +113,27 @@ def user(db: Session):
 
 
 @pytest.fixture()
+def other_user(db: Session):
+    from src.db.models.users import User
+    from src.core.security import hash_password
+    from tests.factories import make_user_payload
+
+    payload = make_user_payload()
+    hashed_password = hash_password(payload.password)
+    row = User(
+        username=payload.username,
+        email=payload.email,
+        full_name=payload.full_name,
+        is_active=payload.is_active,
+        hashed_password=hashed_password,
+    )
+    row.raw_password = payload.password
+    db.add(row)
+    db.flush()
+    return row
+
+
+@pytest.fixture()
 def auth_token(client: TestClient, user: User) -> str:
     resp = client.post(
         "/token",
@@ -130,6 +151,26 @@ def auth_token(client: TestClient, user: User) -> str:
 @pytest.fixture()
 def auth_headers(auth_token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {auth_token}"}
+
+
+@pytest.fixture()
+def other_auth_token(client: TestClient, other_user: User) -> str:
+    resp = client.post(
+        "/token",
+        data={
+            "username": other_user.username,
+            "password": other_user.raw_password,
+            "grant_type": "password",
+        },
+        headers={"content-type": "application/x-www-form-urlencoded"},
+    )
+    assert resp.status_code == 200
+    return resp.json()["access_token"]
+
+
+@pytest.fixture()
+def other_auth_headers(other_auth_token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {other_auth_token}"}
 
 
 @pytest.fixture()
